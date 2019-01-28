@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 )
 
 var (
@@ -65,9 +66,12 @@ func (e *Events) Event(c *gin.Context) {
 		return
 	}
 
+	msg := ""
+
 	if mess.MsgType == "event" {
 		if mess.Event == "subscribe" {
 			e.Subscribe(mess)
+			msg = e.SendMsg(mess.ToUserName,mess.FromUserName,"hello .")
 		} else if mess.Event == "unsubscribe" {
 			e.Unsubscribe(mess)
 		} else {
@@ -78,11 +82,12 @@ func (e *Events) Event(c *gin.Context) {
 
 		} else if
 		*/
+		msg = e.SendMsg(mess.ToUserName,mess.FromUserName,"the system is under maintenance, please try again.")
 	} else {
 
 	}
-
-	c.String(http.StatusOK,"")
+	log.Println(msg)
+	c.String(http.StatusOK,msg)
 	return
 }
 
@@ -158,4 +163,21 @@ func(e *Events) Unsubscribe(mess *Message) error {
 	orm.Delete(models.Sub{}, "user_id = ?", user.ID)
 
 	return nil
+}
+
+func(e *Events) SendMsg(from string,to string,content string) string {
+	mess := &Message{
+		FromUserName:from,
+		ToUserName:to,
+		Content:content,
+		MsgType:"text",
+		CreateTime:time.Now().Unix(),
+	}
+
+	r,err := xml.Marshal(mess)
+	if err != nil {
+		return ""
+	}
+
+	return string(r)
 }
