@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/viile/rssbot/models"
 	"github.com/viile/rssbot/pkg/xorm"
 	"log"
 	"net/http"
@@ -40,6 +41,7 @@ func InitEvents(g *gin.Engine) (err error) {
 	events := Events{}
 
 	g.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+	g.GET("/", func(c *gin.Context) { c.String(http.StatusOK, "ok") })
 
 	g.GET("/signature",events.Signature)
 
@@ -51,7 +53,7 @@ func InitEvents(g *gin.Engine) (err error) {
 func (e *Events) Event(c *gin.Context) {
 	buf := make([]byte, 1024)
 	n, _ := c.Request.Body.Read(buf)
-	fmt.Println(string(buf[0:n]))
+	log.Println(string(buf[0:n]))
 
 	mess := &Message{
 
@@ -59,25 +61,29 @@ func (e *Events) Event(c *gin.Context) {
 
 	err := xml.Unmarshal(buf[0:n],mess)
 	if err != nil {
-		c.String(http.StatusOK,"")
+		c.String(http.StatusOK,"parser error")
 		return
 	}
 
 	if mess.MsgType == "event" {
 		if mess.Event == "subscribe" {
-
+			e.Subscribe(mess)
 		} else if mess.Event == "unsubscribe" {
-
+			e.Unsubscribe(mess)
 		} else {
-			c.String(http.StatusOK,"")
-			return
 		}
 	} else if mess.MsgType == "text" {
+		/*
+		if mess.Content == "list" {
 
+		} else if
+		*/
 	} else {
-		c.String(http.StatusOK,"")
-		return
+
 	}
+
+	c.String(http.StatusOK,"")
+	return
 }
 
 func (e *Events) Signature(c *gin.Context) {
@@ -130,4 +136,26 @@ func (e *Events) Signature(c *gin.Context) {
 			"message": "args error",
 		})
 	}
+}
+
+func(e *Events) Subscribe(mess *Message) error {
+	log.Println(mess)
+	user := &models.User{
+		OpenID:mess.FromUserName,
+	}
+	orm.Create(&user)
+	return nil
+}
+
+func(e *Events) Unsubscribe(mess *Message) error {
+	user := &models.User{
+		OpenID:mess.FromUserName,
+	}
+	if orm.First(&user).RecordNotFound() {
+		return nil
+	}
+	orm.Delete(user)
+	orm.Delete(models.Sub{}, "user_id = ?", user.ID)
+
+	return nil
 }

@@ -11,7 +11,7 @@ import (
 
 func NewClient() (client *gorm.DB, err error) {
 	ch := make(chan *gorm.DB)
-	go connDB(ch, client, "root:123456@tcp(localhost:3307)/bots?charset=utf8&parseTime=True&loc=Local")
+	go connDB(ch, client, "root:redhat@tcp(localhost:3307)/bots?charset=utf8&parseTime=True&loc=Local")
 	t := time.NewTicker(time.Second * 15)
 	select {
 	case v := <-ch:
@@ -26,11 +26,13 @@ func NewClient() (client *gorm.DB, err error) {
 		err = errors.New("orm init failed")
 		return
 	}
+	client.Debug()
 	log.Println("orm success")
 	return
 }
 
 func connDB(ch chan *gorm.DB, client *gorm.DB, str string) {
+	log.Println(str)
 	client, err := gorm.Open("mysql", str)
 	if err != nil {
 		ch <- nil
