@@ -21,12 +21,13 @@ const (
 )
 // 事件
 const (
-	Sha = iota
+	Sha = 1 << iota
 	Shou
 	She
+	Meng
 	Jiu
 	Du
-	Yan
+	YanEL
 )
 
 var RoleTable  = map[int]string{
@@ -57,13 +58,13 @@ type Room struct{
 
 func NewRoom(id string,owner int,roles []int) *Room {
 	roles = utils.Random(roles,6)
-	len := len(roles)
+	nums := len(roles)
 	room := &Room{
 		ID:id,
-		Nums:len,
-		Roles:make(map[int]int,len),
-		Users:make(map[int]int,len),
-		Status:make(map[int]int,len),
+		Nums:nums,
+		Roles:make(map[int]int,nums),
+		Users:make(map[int]int,nums),
+		Status:make(map[int]int,nums),
 		Events:make(map[int][]int,0),
 		RoomStatus:1,
 		RoomOwner:owner,
@@ -111,8 +112,40 @@ func (r *Room) Start(id int) error {
 	return nil
 }
 
-func (r *Room) AddEvent(id int,ops []int) error {
-	r.Events[id] = ops
+func (r *Room) Yan(pla int,def int) bool {
+	if r.Roles[def] == HeiLangWang || r.Roles[def] == BaiLangWang || r.Roles[def] == LangRen {
+		return true
+	} else if r.Roles[def] == ELingQiShi {
+		r.AddEvent(pla,[]int{YanEL,def})
+		return true
+	} else {
+		return false
+	}
+}
+
+func (r *Room) AddEvent(pla int,ops []int) error {
+	if len(ops) < 2 {
+		return errors.New("错误事件!")
+	}
+	op,def := ops[0],ops[1]
+	switch op {
+	case Sha:
+		r.Status[def] &= Sha
+	case Shou:
+		r.Status[def] &= Shou
+	case Jiu:
+		r.Status[def] &= Jiu
+	case Du:
+		r.Status[def] &= Du
+	case She:
+		r.Status[pla] &= She
+	case Meng:
+		r.Status[def] &= Meng
+	case YanEL:
+		r.Status[def] &= YanEL
+	default:
+		return errors.New("暂不支持该事件!")
+	}
 	return nil
 }
 
@@ -121,7 +154,7 @@ func (r *Room) Result(id int) error {
 		return errors.New("您不是房主!")
 	}
 
-	//for _,_ := range r.Events {
+	//for k,v := range r.Status {
 	//
 	//}
 

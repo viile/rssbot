@@ -56,10 +56,7 @@ func (e *Events) Event(c *gin.Context) {
 	n, _ := c.Request.Body.Read(buf)
 	log.Println(string(buf[0:n]))
 
-	mess := &Message{
-
-	}
-
+	mess := &Message{}
 	err := xml.Unmarshal(buf[0:n],mess)
 	if err != nil {
 		c.String(http.StatusOK,"parser error")
@@ -67,7 +64,6 @@ func (e *Events) Event(c *gin.Context) {
 	}
 
 	msg := ""
-
 	if mess.MsgType == "event" {
 		if mess.Event == "subscribe" {
 			e.Subscribe(mess)
@@ -77,14 +73,9 @@ func (e *Events) Event(c *gin.Context) {
 		} else {
 		}
 	} else if mess.MsgType == "text" {
-		/*
-		if mess.Content == "list" {
-
-		} else if
-		*/
-		msg = e.SendMsg(mess.ToUserName,mess.FromUserName,"the system is under maintenance, please try again.")
+		msg = e.SendMsg(mess.ToUserName,mess.FromUserName,"系统正在开发中,稍等片刻")
 	} else {
-
+		msg = e.SendMsg(mess.ToUserName,mess.FromUserName,"系统正在开发中,稍等片刻")
 	}
 	log.Println(msg)
 	c.String(http.StatusOK,msg)
@@ -166,18 +157,13 @@ func(e *Events) Unsubscribe(mess *Message) error {
 }
 
 func(e *Events) SendMsg(from string,to string,content string) string {
-	mess := &Message{
-		FromUserName:from,
-		ToUserName:to,
-		Content:content,
-		MsgType:"text",
-		CreateTime:time.Now().Unix(),
-	}
+	mess := `<xml>
+	<ToUserName><![CDATA[%s]]></ToUserName>
+	<FromUserName><![CDATA[%s]]></FromUserName>
+	<CreateTime>%d</CreateTime>
+	<MsgType><![CDATA[text]]></MsgType>
+	<Content><![CDATA[%s]]></Content>
+	</xml>`;
 
-	r,err := xml.Marshal(mess)
-	if err != nil {
-		return ""
-	}
-
-	return string(r)
+	return fmt.Sprintf(mess,to,from,time.Now().Unix(),content)
 }
